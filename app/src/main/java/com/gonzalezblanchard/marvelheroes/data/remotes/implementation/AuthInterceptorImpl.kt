@@ -1,9 +1,10 @@
 package com.gonzalezblanchard.marvelheroes.data.remotes.implementation
 
-import com.gonzalezblanchard.marvelheroes.utils.Constants
+import com.gonzalezblanchard.marvelheroes.BuildConfig
 import com.gonzalezblanchard.marvelheroes.utils.PreferencesManager
 import okhttp3.Interceptor
 import okhttp3.Response
+import java.security.MessageDigest
 import javax.inject.Inject
 
 class AuthInterceptorImpl @Inject constructor(
@@ -14,11 +15,13 @@ class AuthInterceptorImpl @Inject constructor(
         try{
             val original = chain.request()
             val originalHttpUrl = original.url
+            val timestamp = System.currentTimeMillis().toString()
+            val hash = md5(timestamp + BuildConfig.MARVEL_PRIVATE_KEY + BuildConfig.MARVEL_PUBLIC_KEY)
 
             val url = originalHttpUrl.newBuilder()
-                .addQueryParameter("apikey", Constants.APIKEY)
-                .addQueryParameter("ts", Constants.TS)
-                .addQueryParameter("hash", Constants.MD5)
+                .addQueryParameter("apikey", BuildConfig.MARVEL_PUBLIC_KEY)
+                .addQueryParameter("ts", timestamp)
+                .addQueryParameter("hash", hash)
                 .build()
 
             // Request customization: add request headers
@@ -30,6 +33,11 @@ class AuthInterceptorImpl @Inject constructor(
         }catch (ex:Exception){
             return chain.proceed(chain.request().newBuilder().build())
         }
+    }
+
+    private fun md5(value: String): String {
+        val digest = MessageDigest.getInstance("MD5").digest(value.toByteArray(Charsets.UTF_8))
+        return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
 
 }

@@ -1,6 +1,8 @@
 *.iml
 .gradle
 /local.properties
+# Claves locales de la API de Marvel. Ver secrets.properties.example.
+secrets.properties
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml

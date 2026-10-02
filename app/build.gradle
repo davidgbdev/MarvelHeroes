@@ -6,6 +6,31 @@ plugins {
 
 apply plugin: 'kotlin-kapt'
 
+def secretsFile = rootProject.file("secrets.properties")
+def secrets = new Properties()
+if (secretsFile.exists()) {
+    secretsFile.withInputStream { stream -> secrets.load(stream) }
+}
+
+def marvelPublicKey = (secrets.getProperty("MARVEL_PUBLIC_KEY") ?: "").trim()
+def marvelPrivateKey = (secrets.getProperty("MARVEL_PRIVATE_KEY") ?: "").trim()
+def placeholderKeys = [
+        "tu_clave_publica",
+        "tu_clave_privada",
+] as Set
+
+if (!marvelPublicKey || !marvelPrivateKey || placeholderKeys.contains(marvelPublicKey) || placeholderKeys.contains(marvelPrivateKey)) {
+    throw new GradleException(
+            "Faltan las claves de la API de Marvel. Copia secrets.properties.example a secrets.properties " +
+                    "en la raíz del proyecto y define MARVEL_PUBLIC_KEY y MARVEL_PRIVATE_KEY " +
+                    "con las claves de https://developer.marvel.com/."
+    )
+}
+
+def quoteForBuildConfig = { String value ->
+    '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+}
+
 android {
     namespace 'com.gonzalezblanchard.marvelheroes'
     compileSdk 33
@@ -21,6 +46,9 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        buildConfigField "String", "MARVEL_PUBLIC_KEY", quoteForBuildConfig(marvelPublicKey)
+        buildConfigField "String", "MARVEL_PRIVATE_KEY", quoteForBuildConfig(marvelPrivateKey)
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -45,6 +73,7 @@ android {
     buildFeatures {
         viewBinding=true
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.2.0'
